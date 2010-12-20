@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import xmlrpclib
 import logging, sys
-
+import pprint
 
 from repl import Formater, REPL
 from utils import sizeof_fmt, simple_eta, achievepercent, ReadOnlyDict
@@ -24,7 +24,7 @@ class AriaDownloadFormater(Formater):
 		print "-------------------------------------------"
 		with self.download:
 			data = self.download.data
-			print data["files"][0]["path"] + "   " + str(sizeof_fmt(int(data["completedLength"]))) + "/" + \
+			print "id: "+data["gid"]+"  "+data["files"][0]["path"] + "   " + str(sizeof_fmt(int(data["completedLength"]))) + "/" + \
 					 str(sizeof_fmt(int(data["totalLength"])))
 			print "Speed: " + sizeof_fmt(int(data["downloadSpeed"])) + "/s     "  + \
 				 str(achievepercent(int(data["totalLength"]), int(data["completedLength"]))) + "%"
@@ -60,7 +60,9 @@ class AriaControler:
 		try:
 			fn = getattr(server, cmd)
 			result = fn(*args)
-			self.logger.debug("Call: "+ cmd + "\nResponse: "+ str(result))
+			ppresult = pprint.pformat(result, 1)
+			self.logger.debug("Call: "+ cmd )
+			self.logger.debug("Response:\n "+ ppresult)
 			return result
 		except (xmlrpclib.Fault, xmlrpclib.ProtocolError):
 			self.logger.error( '%s: %s' % (cmd, sys.exc_info()[1]) )
@@ -69,29 +71,29 @@ class AriaControler:
 	##############
 	### Repl cmd
 	def do_addUri(self, uris):
+		""" aria2.addUri return gid """
 		rep = self._do_cmd("aria2.addUri", [uris])		
 		return AriaDownload(self,int(rep))
 	
 	def do_pauseAll(self):
-		""" Pause all downloads
-		:returns:  bool -- the return code.
-		"""
-		rep = self.connection.aria2.pauseAll()
-		self.logger.debug(str(rep))
-		if rep == "OK":
-			return True
-		else:
-			self.warning(str(rep))
-			return False
+		"""Return OK on success """
+		#~ rep = self.connection.aria2.pauseAll()
+		rep = self._do_cmd("aria2.pauseAll")
+		return rep
 			
 	def do_unpauseAll(self):
-		""" Unpause all downloads
-		:returns:  bool -- the return code.
-		"""
-		rep = self.connection.aria2.unpauseAll()
-		print rep
+		"""Return OK on success """
+		rep = self._do_cmd("aria2.unpauseAll")
+		return rep
+	
+	def do_purgeDownloadResult(self):
+		"""Return OK on success """
+		rep = self._do_cmd("aria2.purgeDownloadResult")
+		return rep
+
 		
 	def do_tellActive(self):
+		""" aria2.tellActive return a list of download """
 		rep = self._do_cmd("aria2.tellActive")
 		dls = []
 		for download in rep:
@@ -99,33 +101,38 @@ class AriaControler:
 		return dls
 		
 	def do_tellWaiting(self,offset=0, num=10):
-		self.connection.aria2.tellWaiting(offset, num)
-		
-	def do_tellStopped(self, offset=0, num=10):
-		rep = self.connection.aria2.tellStopped(offset, num)
+		""" aria2.tellWaiting return a list of download """
+		rep = self._do_cmd("aria2.tellWaiting", offset, num)
 		dls = []
 		for download in rep:
 			dls.append(AriaDownload(self,int(download["gid"])))
 		return dls
-	
-	def do_purgeDownloadResult(self):
-		self.connection.aria2.purgeDownloadResult()
+		
+	def do_tellStopped(self, offset=0, num=10):
+		""" aria2.tellStopped return a list of download """
+		rep = self._do_cmd("aria2.tellStopped", offset, num)		
+		dls = []
+		for download in rep:
+			dls.append(AriaDownload(self,int(download["gid"])))
+		return dls
 
-	
-	# Download action
 	def do_remove(self,gid):
-		self.connection.aria2.remove(gid)
+		""" Return the removed download's gid """
+		rep = self._do_cmd("aria2.remove", gid)
+		return rep
 		
 	def do_pause(self, gid):
-		self.connection.aria2.pause(gid)
-	
+		""" Return the removed download's gid """
+		rep = self._do_cmd("aria2.pause", gid)
+		return rep
+		
 	def do_unpause(self, gid):
-		self.connection.aria2.unpause(gid)
-	
+		""" Return the removed download's gid """
+		rep = self._do_cmd("aria2.unpause", gid)
+		return rep
+			
 	def do_tellStatus(self, gid):
-		self.logger.debug("Get status gid: "+ str(gid)+"\nResponse:")
-		rep = self.connection.aria2.tellStatus(gid)
-		self.logger.debug(str(rep))
+		rep = self._do_cmd("aria2.tellStatus", gid)
 		return rep
 
 
