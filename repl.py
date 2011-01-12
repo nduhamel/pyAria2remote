@@ -37,6 +37,7 @@ class REPL:
         parts = line.split()
         
         cmdkeys = self.cmd.keys()
+        cmdkeys.extend(['quit', 'bye', 'exit'])
         for k in cmdkeys:
             if k.startswith(text):
                 match.append(k+" ")
