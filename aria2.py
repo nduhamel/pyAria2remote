@@ -40,10 +40,10 @@ class AriaDownload(ReadOnlyDict):
     
 
 class AriaControler:
-        
-    def __init__(self, server=None, port=None):
-        self.connection = xmlrpclib.ServerProxy("http://localhost:6800/rpc")
-        self.logger = logging.getLogger()
+    
+    def load(self,  server="localhost", port="6800"):
+        self.connection = xmlrpclib.ServerProxy("http://"+server+":"+port+"/rpc")
+        self.logger = logging.getLogger()       
 
     def _do_cmd(self, cmd, *args):
         '''real xmlrpc command.'''

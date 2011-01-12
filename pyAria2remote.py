@@ -50,7 +50,7 @@ class AriaDownloadFormater(Formater):
 
 if __name__ == '__main__':
     aria = AriaControler()
-    app = REPL()
+    app = REPL(configFile="pyaria2.conf")
     app.register_formater(AriaDownload, AriaDownloadFormater)
     app.register_obj(aria)
     app.interactive()

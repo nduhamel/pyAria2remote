@@ -24,9 +24,17 @@ class Formater:
 
 
 class REPL:
-    def __init__(self):
+    def __init__(self, configFile=None):
         self.cmd = {}
         self.formater = {}
+        
+        if configFile:
+            print "Conf!!"
+            import ConfigParser
+            self.config = ConfigParser.ConfigParser()
+            self.config.read(configFile)
+        else:
+            self.config = False
         
         self.cmd["help"] = self.print_cmd
     
@@ -77,15 +85,20 @@ class REPL:
             else:
                 rep = self.cmd[cmd]()
         else:
-            print "Error cmd"
+            print "Unknow command"
+            return False
+            
         if not isinstance(rep, list):
             rep =[rep]
             
         def wrapper(obj, formaters):
             for knowObj in formaters:
                 if isinstance(obj, knowObj):
-                    return self.formater[knowObj](obj).pprint()
-            return Formater(obj).pprint()
+                    self.formater[knowObj](obj).pprint()
+                    return True
+            Formater(obj).pprint()
+            return True
+            
         for obj in rep:
             wrapper(obj, self.formater)
 
@@ -95,6 +108,16 @@ class REPL:
         method must start with do_
         arg are passed as dict
         """
+        objName = obj.__class__.__name__
+        print objName
+        #Read Config
+        if self.config:
+            if objName in self.config.sections():
+                conf = {}
+                conf.update(self.config.items(objName))
+                print conf
+                obj.load(**conf)
+                
         import re
         pattern = re.compile("^do_.*")
         for name in dir(obj):
