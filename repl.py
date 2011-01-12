@@ -117,7 +117,8 @@ class REPL:
                 conf.update(self.config.items(objName))
                 print conf
                 obj.load(**conf)
-        obj.load()
+        else:
+            obj.load()
                 
         import re
         pattern = re.compile("^do_.*")
