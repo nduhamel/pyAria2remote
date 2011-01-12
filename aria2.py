@@ -15,7 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 import xmlrpclib
-import logging
+import logging, sys
 import pprint
 
 from utils import sizeof_fmt, simple_eta, achievepercent, ReadOnlyDict
@@ -26,15 +26,15 @@ class AriaDownload(ReadOnlyDict):
 		ReadOnlyDict.__init__(self)
 		
 		assert isinstance(ariaControler, AriaControler)
-		assert isinstance(gid, int)
+		assert isinstance(gid, int) or isinstance(gid, str)
 		self.aria2 = ariaControler
-		self.gid = gid
+		self.gid = str(gid)
 	
 	def __enter__(self):  self._updateStatus()
 	def __exit__(self, exc_type, exc_value, traceback): pass
 	
 	def _updateStatus(self):
-		rep = self.aria2.do_tellStatus(str(self.gid))
+		rep = self.aria2.do_tellStatus(self)
 		self.update(rep)
 	
 
@@ -120,5 +120,11 @@ class AriaControler:
 		return rep
 			
 	def do_tellStatus(self, gid):
-		rep = self._do_cmd("aria2.tellStatus", gid)
+		assert isinstance(gid, str) or isinstance(gid, AriaDownload)
+		if isinstance(gid, AriaDownload):
+			gid = gid.gid
+			rep = self._do_cmd("aria2.tellStatus", gid)
+		else:
+			rep = self._do_cmd("aria2.tellStatus", gid)
+			rep = AriaDownload(self,rep["gid"])
 		return rep

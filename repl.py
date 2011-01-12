@@ -16,7 +16,6 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 import readline
 
-
 class Formater:
 	def __init__(self, obj):
 		self.object = obj
@@ -40,7 +39,7 @@ class REPL:
 		cmdkeys = self.cmd.keys()
 		for k in cmdkeys:
 			if k.startswith(text):
-				match.append(k)
+				match.append(k+" ")
 		if state < 0:
 			return match
 		if len(match) > state:
