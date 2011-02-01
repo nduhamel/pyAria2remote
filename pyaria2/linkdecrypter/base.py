@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Copyright(C) 2010  Nicolas Duhamel
 #
@@ -14,10 +13,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+from ..module import ModuleMount, MountPoint
 
-from pyaria2 import AriaControler
+class Decrypter(MountPoint,object):
+    """
+    Mount point for decrypter plugins
 
-if __name__ == '__main__':
-    app = AriaControler()
-    app.cmdloop()
+    Decrypters implementing this reference should provide the following attributes:
+    
+    ========  ========================================================
+    decrypt([url]) return [decrypted_url or False] raise an Error if not
+                   available
+    ========  ========================================================
+    """
+    __metaclass__ = ModuleMount
+    
+
 

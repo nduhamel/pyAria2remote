@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Copyright(C) 2010  Nicolas Duhamel
 #
@@ -14,10 +13,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+# Taken from Python 2.7 with permission from/by the original author.
+import pkgutil
+import inspect
+from base import *
 
-from pyaria2 import AriaControler
+"""
+Import all plugins
+And register all MountPoint defined in module base in __all__
+"""
+from ..config import getConfig
 
-if __name__ == '__main__':
-    app = AriaControler()
-    app.cmdloop()
+conf =  getConfig("AriaControler")
 
+
+if type(conf['decrypter']) == type([]):    
+    active_mod = map((lambda s: "%s.%s" % (__name__, s)), conf['decrypter'])
+else:
+    active_mod = conf['decrypter']
+
+for importer, modname, ispkg in pkgutil.iter_modules(__path__,__name__+'.'):
+    if modname == __name__+'.base': continue
+    if modname in active_mod:
+        __import__(modname, fromlist="dummy")
+
+__all__ = ["Decrypter"]

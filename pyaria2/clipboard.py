@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Copyright(C) 2010  Nicolas Duhamel
 #
@@ -15,9 +14,25 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-from pyaria2 import AriaControler
+from lib.timer import RepeatTimer
+from lib.pyperclip import getcb, setcb
 
-if __name__ == '__main__':
-    app = AriaControler()
-    app.cmdloop()
+from utils import stdoutLock
 
+import sys
+
+class ClipboardWatcher(object):
+    
+    @classmethod
+    def set_onClip(cls, onClipFct):
+        cls.onclip = onClipFct
+        cls.timer = RepeatTimer(5, cls.check, 0)
+        cls.timer.start()
+    
+    @classmethod
+    def check(cls):
+        pass
+
+    @classmethod
+    def onClip(cls, txt):
+        cls.onclip(cls.onclip.__self__, txt)
