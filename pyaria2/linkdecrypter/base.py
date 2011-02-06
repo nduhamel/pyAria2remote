@@ -15,18 +15,40 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 from ..module import ModuleMount, MountPoint
 
-class Decrypter(MountPoint,object):
+from threading import Thread
+from Queue import Queue
+
+class Decrypter(MountPoint,Thread,object):
     """
     Mount point for decrypter plugins
 
     Decrypters implementing this reference should provide the following attributes:
+    ========  ========================================================
+    load()    initialisation method called when thread is started
     
+    
+    Decrypter already implement:
     ========  ========================================================
-    decrypt([url]) return [decrypted_url or False] raise an Error if not
-                   available
-    ========  ========================================================
+    jobQueue  
+    resultsQueue
+    
     """
     __metaclass__ = ModuleMount
     
+    daemon = True
+    
+    def __init__(self):
+        super(Decrypter, self).__init__()
+        self.jobQueue = Queue()
+    
+    def run(self):
+        self.load()
+        while True:
+            req = self.jobQueue.get()
+            
+            result = self.decrypt(req.req)
+            if result: req.set_response(result)
+            req.task_done()
+            self.jobQueue.task_done()
 
 

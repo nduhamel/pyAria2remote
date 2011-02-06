@@ -67,6 +67,7 @@ class Controler(cmd.Cmd, object):
 	def poutput(self, msg):
 		'''Convenient shortcut for self.stdout.write(); adds newline if necessary.'''
 		if msg:
+			msg = msg.encode('utf-8')
 			self.stdout.write(msg)
 			if msg[-1] != '\n':
 				self.stdout.write('\n')

@@ -30,6 +30,35 @@ class stdoutLock(object):
         return lockedfunc
 
 
+class LimitedSizeList(list):
+    __slots__ = ['size']
+    
+    def __init__(self, itr=[], size=0):
+        self.size = size
+        if self.size:
+            l = list(itr)
+            while len(l) > self.size:
+                l.pop(0)
+            itr = l
+        list.__init__(self, itr)
+    
+    def append(self, item):
+        if self.size and len(self) >= self.size:
+            list.pop(self,0)
+        list.append(self, item)
+    
+    def extend(self, itr):
+        l = list(itr)
+        self.size = self.size + len(l)
+        list.extend(self,l)
+    
+    def downsize(self, howmuch = 1):
+        if not self.size or self.size == 1: raise ValueError
+        self.size = self.size - howmuch
+        while len(self) > self.size:
+            list.pop(self,0)
+
+
 import re
 
 URL_RE = ( re.compile("([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}|(((news|telnet|nttp|file|http|ftp|https)://)|(www|ftp)[-A-Za-z0-9]*\\.)[-A-Za-z0-9\\.]+)(:[0-9]*)?/[-A-Za-z0-9_\\$\\.\\+\\!\\*\\(\\),;:@&=\\?/~\\#\\%]*[^]'\\.}>\\),\\\"]"),

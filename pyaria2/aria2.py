@@ -15,15 +15,18 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 import sys
 import xmlrpclib
+import Queue
 
 from .objects import AriaDownload
 from .formater import Formaters, ConsolFormater
 from .utils import option, make_option
 from .utils import isUrl, tagetUrlIsText
 
-from linkdecrypter import Decrypter
+from .linkdecrypter import Decrypter
+from .module import ModuleLoader
 
 from .controler import Controler
+
 
 class AriaControler(Controler):
     """
@@ -35,6 +38,7 @@ class AriaControler(Controler):
     prompt = "Aria> "
     verbose = True
     formaters = Formaters(ConsolFormater)
+    decrypters = ModuleLoader(Decrypter)
     
     def preloop(self):
         """Hook method executed once when the cmdloop() method is called."""
@@ -42,19 +46,6 @@ class AriaControler(Controler):
         serv_url = "http://%s:%s/rpc" % (self._conf['server'], self._conf['port'])
         self.connection = xmlrpclib.ServerProxy(serv_url)
         
-        #~ if self._conf['clipboard']:
-            #~ self.pfeedback("* Load clipboard watcher")
-            #~ from clipboard import ClipboardWatcher
-            #~ ClipboardWatcher.set_onClip(self.onclip)
-        
-        #Test linkdecrypter
-        print Decrypter().modules
-    
-    def onclip(self, txt):
-        pass
-    
-    def do_clip(self, args):
-        self.poutput(args)
     
     def _xmlrpc(self, cmd, *args):
         '''real xmlrpc command'''
@@ -63,12 +54,6 @@ class AriaControler(Controler):
         return fn(*args)
     
     def do_quit(self, *args):
-        import threading
-        for thread in threading.enumerate():
-            try:
-                thread.cancel()
-            except AttributeError:
-                pass
         return False
     do_q = do_quit
     
@@ -90,14 +75,29 @@ class AriaControler(Controler):
                 question = "The url (%s) point to an HTML document\nIs it expected ?" % url
                 choice = self.select( (('dl',"download"), ('decrypt',"decrypt"), ('c',"cancel") ),prompt=question)
                 if choice == 'c' : return None
-                if choice == 'decrypt': pass
+                if choice == 'decrypt': url = self._decrypt(url)
 
         
         options = {'max-connection-per-server':'2'}
         started = [ self._xmlrpc("aria2.addUri", [url], options) for url in urls]
         
         return started
-
+    
+    def do_decrypt(self, arg):
+        rep = self._decrypt(arg)
+        if rep:
+            return self.do_addurls(rep)
+        else:
+            self.poutput("Error")
+            return True
+    
+    def _decrypt(self, url):
+        req =  self.decrypters.request(url)
+        try:
+            return req.get()
+        except Queue.Empty:
+            print "No result"
+    
     @option(make_option("-d", "--download", action="store", type="string", dest="gid"))
     def do_url(self, arg, opts):
         

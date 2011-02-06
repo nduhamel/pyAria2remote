@@ -32,6 +32,7 @@ class RepeatTimer(Thread):
         self.args = args
         self.kwargs = kwargs
         self.finished = Event()
+        self.daemon = True #mod set deamon
  
     def run(self):
         count = 0

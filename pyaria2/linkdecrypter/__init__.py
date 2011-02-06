@@ -19,8 +19,7 @@ import inspect
 from base import *
 
 """
-Import all plugins
-And register all MountPoint defined in module base in __all__
+Import all installed in conf plugins
 """
 from ..config import getConfig
 
@@ -30,7 +29,7 @@ conf =  getConfig("AriaControler")
 if type(conf['decrypter']) == type([]):    
     active_mod = map((lambda s: "%s.%s" % (__name__, s)), conf['decrypter'])
 else:
-    active_mod = conf['decrypter']
+    active_mod = "%s.%s" % (__name__,conf['decrypter'])
 
 for importer, modname, ispkg in pkgutil.iter_modules(__path__,__name__+'.'):
     if modname == __name__+'.base': continue

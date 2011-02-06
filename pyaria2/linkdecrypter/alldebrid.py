@@ -19,51 +19,46 @@ import urllib
 import re
 
 import base
+from ..config import getConfig
 
 class Alldebrid(base.Decrypter):
-    #~ name = 'Alldebrid'
-    
-    #~ def do(self, links):
-        #~ return self.links(links)
-    #~ 
-    #~ def __init__(self, user, passwd):
-        #~ self.load(user, passwd)
-    
-    def decrypt(self, urls):
-        pass
+   
+    def __init__(self):
+        super(Alldebrid, self).__init__()
         
-    #~ def load(self,user, passwd):
-        #~ self.user = user
-        #~ self.passwd = passwd
-        #~ self.browser = mechanize.Browser()
-        #~ self.connect()
-        #~ 
-    #~ def connect(self):
-        #~ """ Connect to the website """
-        #~ self.browser.open("http://www.alldebrid.com")
-        #~ for form in self.browser.forms():
-            #~ self.browser.form = form
-            #~ break
-        #~ self.browser.form.find_control(name="pseudo").value = self.user
-        #~ self.browser.form.find_control(name="password").value = self.passwd 
-        #~ self.browser.submit()
-        #~ 
-    #~ def isconnect(self):
-        #~ """ Return True or False """
-        #~ pass
-        #~ 
-    #~ def link(self, link):
-        #~ """ prend un lien et retourne un lien debrider """
-        #~ self.browser.open("http://www.alldebrid.com/service.php?link="+urllib.quote(link)+"&nb=0")
-        #~ rep = self.browser.response().get_data()
-        #~ if  rep[0] == '0':
-            #~ urls = re.findall(r'href=[\'"]?([^\'" >]+)', rep)
-            #~ return urls[0]
-        #~ else:
-            #~ return False
-            #~ 
-    #~ def links(self, links):
-        #~ """ prend une liste et retoure une liste """
-        #~ return [self.link(url) for url in links]
+    
+    def load(self):
+        #Load config
+        self.conf = getConfig("alldebrid")
+        #Load browser
+        self.browser = mechanize.Browser()
+        
+        #Connect
+        self.connect()
+    
+    def connect(self):
+        self.browser.open("http://www.alldebrid.com")
+        for form in self.browser.forms():
+            self.browser.form = form
+            break
+        self.browser.form.find_control(name="pseudo").value = self.conf['user']
+        self.browser.form.find_control(name="password").value = self.conf['password'] 
+        self.browser.submit()
+
+    def decrypt(self, url):
+        if self.isconnect():
+            self.browser.open("http://www.alldebrid.com/service.php?link="+urllib.quote(url)+"&nb=0")
+            rep = self.browser.response().get_data()
+            print rep
+            if  rep[0] == '0':
+                urls = re.findall(r'href=[\'"]?([^\'" >]+)', rep)
+                return urls[0]
+            else:
+                print rep[0]
+                print rep.split(":", 1)[1]
+                return False
+                
+    def isconnect(self):
+        return True
     
     
