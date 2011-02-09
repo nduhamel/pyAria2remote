@@ -15,7 +15,6 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 from Queue import Queue, Empty
 import time
-#~ from .utils import LimitedSizeList
 
 class ModuleMount(type):
     """ The metaclass that enable auto-register module """
@@ -82,14 +81,12 @@ class ModuleReq(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+
 class ModuleLoader(object):
     def __init__(self, mount):
         self.mount = mount
-        #~ self.cache = LimitedSizeList(size=5)
-        
-        #init modules
         self.modules = [p() for p in self.mount.modules]
-        #launch modules
+
         for p in self.modules:
             p.start()
     
@@ -101,19 +98,3 @@ class ModuleLoader(object):
             mod.jobQueue.put(req.start())
         
         return req
-        #~ request = ModuleReq(req)
-        #~ if request in self.cache:
-            #~ print "Already cached"
-            #~ return "cached"
-        #~ else:
-            #~ self.cache.append(request)
-            #~ 
-        #~ for mod in self.modules:
-            #~ mod.jobQueue.put(req)
-            #~ mod.jobQueue.join()
-            #~ 
-        #~ res = []
-        #~ for mod in self.modules:
-            #~ res.append(mod.resultsQueue.get())
-        #~ return res
-    

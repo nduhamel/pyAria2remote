@@ -23,7 +23,7 @@ Import all installed in conf plugins
 """
 from ..config import getConfig
 
-conf =  getConfig("AriaControler")
+conf =  getConfig("Aria2console")
 
 
 if type(conf['decrypter']) == type([]):    

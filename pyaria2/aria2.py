@@ -13,77 +13,80 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-import sys
-import xmlrpclib
-import Queue
+from mypyapp.console import ConsoleApp, command, option, make_option
+from mypyapp.completer import FilePathCompleter
 
-from .objects import AriaDownload
-from .formater import Formaters, ConsolFormater
-from .utils import option, make_option
+from aria2interface import Aria2Interface
+
 from .utils import isUrl, tagetUrlIsText
 
 from .linkdecrypter import Decrypter
 from .module import ModuleLoader
 
-from .controler import Controler
+from .objects import AriaDownload
+from .formater import Formaters, ConsolFormater 
 
 
-class AriaControler(Controler):
-    """
-    _conf autoloaded by MetaConfig with CONFIG as section param
-    """
+
+class Aria2console(ConsoleApp):
     
-    CONFIG = "AriaControler"
-    
+    CONFIG = "Aria2console"   
     prompt = "Aria> "
-    verbose = True
+    
     formaters = Formaters(ConsolFormater)
-    decrypters = ModuleLoader(Decrypter)
+    decrypters = ModuleLoader(Decrypter)   
     
-    def preloop(self):
-        """Hook method executed once when the cmdloop() method is called."""
-        self.stdout = sys.stdout
-        serv_url = "http://%s:%s/rpc" % (self._conf['server'], self._conf['port'])
-        self.connection = xmlrpclib.ServerProxy(serv_url)
+    
+    def load(self): 
+        self.aria2interface = Aria2Interface(self._conf['server'], self._conf['port'])
         
-    
-    def _xmlrpc(self, cmd, *args):
-        '''real xmlrpc command'''
-        server = self.connection
-        fn = getattr(server, cmd)
-        return fn(*args)
-    
-    def do_quit(self, *args):
-        return False
-    do_q = do_quit
-    
-    def do_addurls(self, arg):
+    @command('add')
+    @option(make_option("-f", "--file", action="store", type="string", dest="filename", completer=FilePathCompleter))
+    def addurls(self, args, opts):
         """Download urls.  addurls url [ulr,]"""
-        args = arg.split()
+        
+        #Import url from file 
+        if opts.filename:
+            with open(opts.filename, 'r') as f:
+                args.extend( f.readlines() )
+        
         
         #Validate url
-        do = lambda i: isUrl(i) or self.pfeedback(str(i) + " is not a valid url")
+        error_msg = "/!\ -->  '{0}' is not a valid url "
+        do = lambda i: isUrl(i) or self.pfeedback(error_msg.format(i))
         urls = [i for i in args if do(i) ]
         
+        #if no valid urls quit
         if not urls:
             self.pfeedback("No url provided")
-            return None
+            return False
+        
         #Check content-type for require decrypter
-        #In progress
+        final_urls = []
         for url in urls:
             if tagetUrlIsText(url):
                 question = "The url (%s) point to an HTML document\nIs it expected ?" % url
-                choice = self.select( (('dl',"download"), ('decrypt',"decrypt"), ('c',"cancel") ),prompt=question)
-                if choice == 'c' : return None
-                if choice == 'decrypt': url = self._decrypt(url)
+                choice = self.select( ( ('c',"cancel"), ('dl',"download"), ('decrypt',"decrypt") ),prompt=question)
+                if choice == 'c' : continue
+                if choice == 'decrypt': 
+                    rep = self._decrypt(url)
+                    if rep: final_urls.append(rep)
+                    else: self.pfeedback('%s can\'t be decrypt' % url)
+                if choice == 'dl' : final_urls.append(url)
+            else:
+                final_urls.append(url)
 
         
         options = {'max-connection-per-server':'2'}
-        started = [ self._xmlrpc("aria2.addUri", [url], options) for url in urls]
-        
-        return started
+        started = [ self.aria2interface.request("aria2.addUri", [url], options) for url in final_urls]
+        for obj in started:
+            self.poutput( self.formaters.format(obj) )
+            
+        return False        
     
-    def do_decrypt(self, arg):
+    
+    @command()
+    def decrypt(self, arg):
         rep = self._decrypt(arg)
         if rep:
             return self.do_addurls(rep)
@@ -95,62 +98,78 @@ class AriaControler(Controler):
         req =  self.decrypters.request(url)
         try:
             return req.get()
-        except Queue.Empty:
-            print "No result"
+        except:
+            self.pfeedback( "No result")
+
     
-    @option(make_option("-d", "--download", action="store", type="string", dest="gid"))
-    def do_url(self, arg, opts):
-        
-        if not opts.gid:
-            self.pfeedback("You must set the download id with -d")
-            return None
-            
-        if not arg:
-            #list url
-            return self._xmlrpc("aria2.getUris", opts.gid)
-        else:
-            #add url
-            pass
-        return True
+    ####################################################################
+    ## Final
     
-    def do_tellactive(self, arg):
-        ''' Return list of active downloads '''
+    @command('active')
+    def tellactive(self, arg):
+        """ Return list of active downloads """
         if arg: self.pfeedback("no arg require")
-        rep = self._xmlrpc("aria2.tellActive")
-        return map(AriaDownload, rep)
-    
-    def do_tellwaiting(self, arg):
-        """ Return list of waiting downloads """
-        if arg: self.pfeedback("no arg require")
-        rep = self._xmlrpc("aria2.tellWaiting", 0, 10)
-        return map(AriaDownload, rep)
+        objs = self.aria2interface.tellactive()
         
-    def do_tellstopped(self, arg):
-        """ Return list of stoped downloads """
-        if arg: self.pfeedback("no arg require")
-        rep = self._xmlrpc("aria2.tellStopped", 0, 10)
-        return map(AriaDownload, rep)
-    
-    def do_option(self, arg):
-        rep = self._xmlrpc("aria2.getGlobalOption")
-        return rep
-        
-    def do_purge(self, arg):
-        """ purges completed/error/removed downloads to free memory """
-        rep = self._xmlrpc("aria2.purgeDownloadResult")
-        return rep
-    
-    
-    def postcmd(self, out, line):
-        if out == False: return True # Quit
-        if out == None: return False # Error
-        if out == [] : return False  # No result
-        
-        if type(out) == type([]):
-            for item in out:
-                self.poutput( self.formaters.format(item) )
+        if not objs: 
+            self.pfeedback( 'No active downloads' )
             return False
         
-        self.poutput( self.formaters.format(out) )
+        for obj in objs:
+            self.poutput( self.formaters.format(obj) )
+            
+        return False
+    
+    @command('stopped')
+    @option( [make_option("-s", "--start", action="store", type="int", dest="start", default=0),
+              make_option("-n", "--num" , action='store', type='int', dest='num', default=10),
+              ] )
+    def tellstopped(self, args, opts):
+        """ Return list of stoped downloads """
+        if args: self.pfeedback("no arg require")
+
+        objs = self.aria2interface.tellstopped(opts.start,opts.num) 
         
-        return False                 # Continue
+        if not objs: 
+            self.pfeedback( 'No more stoped downloads' )
+            return False
+        
+        for obj in objs:
+            self.poutput( self.formaters.format(obj) )
+        
+        if len(objs) < opts.num: return False 
+        
+        self.handle_inifite_results(self.tellstopped, '-s %s -n %s' %(opts.start+opts.num,opts.num ))
+    
+    @command('waiting')
+    @option( [make_option("-s", "--start", action="store", type="int", dest="start", default=0),
+              make_option("-n", "--num" , action='store', type='int', dest='num', default=10),
+              ] )
+    def tellwaiting(self, args, opts):
+        """ Return list of waiting downloads """
+        if args: self.pfeedback("no arg require")
+        
+        objs = self.aria2interface.tellwaiting(opts.start,opts.num) 
+        
+        if not objs: 
+            self.pfeedback( 'No more waiting downloads' )
+            return False
+
+        for obj in objs:
+            self.poutput( self.formaters.format(obj) )
+        
+        if len(objs) < opts.num: return False 
+
+        self.handle_inifite_results(self.tellwaiting, '-s %s -n %s' %(opts.start+opts.num,opts.num ))
+
+    @command()
+    def purge(self, arg):
+        """ purges completed/error/removed downloads to free memory """
+        if self.aria2interface.purge():
+            self.poutput( 'Downloads purged' )
+        else:
+            self.poutput( 'Unknow error')
+        return False
+    
+    @command('q', 'quit', 'bye')
+    def quit(self, *ignored): return True

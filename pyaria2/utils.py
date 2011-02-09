@@ -130,33 +130,3 @@ def sizeof_humanreadable(num):
             return "%3.1f%s" % (num, x)
         num /= 1024.0
 
-import optparse
-make_option = optparse.make_option
-
-def option(option_list, arg_desc="arg"):
-    
-    if not isinstance(option_list, list):
-        option_list = [option_list]
-    
-    def option_setup(func):
-        parser = optparse.OptionParser(option_list=option_list)
-        parser.set_usage("%s [options] %s" % (func.__name__, arg_desc))
-        parser._func = func
-        def new_func(instance, arg):
-            try:
-                opts, newArgList = parser.parse_args(arg.split())
- 
-
-            except (optparse.OptionValueError, optparse.BadOptionError,
-                    optparse.OptionError, optparse.AmbiguousOptionError,
-                    optparse.OptionConflictError), e:
-                print (e)
-                parser.print_help()
-                return
-
-            result = func(instance,newArgList,opts)                          
-            return result
-        if not func.__doc__: func.__doc__ = ''
-        new_func.__doc__ = '%s\n%s' % (func.__doc__, parser.format_help())
-        return new_func
-    return option_setup

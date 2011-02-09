@@ -13,26 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+import os
 
-from lib.timer import RepeatTimer
-from lib.pyperclip import getcb, setcb
-
-from utils import stdoutLock
-
-import sys
-
-class ClipboardWatcher(object):
+def FilePathCompleter(partial_path=None):
+    if not partial_path: return ["/"]
     
-    @classmethod
-    def set_onClip(cls, onClipFct):
-        cls.onclip = onClipFct
-        cls.timer = RepeatTimer(5, cls.check, 0)
-        cls.timer.start()
-    
-    @classmethod
-    def check(cls):
-        pass
-
-    @classmethod
-    def onClip(cls, txt):
-        cls.onclip(cls.onclip.__self__, txt)
+    (base, name) = os.path.split(partial_path)
+    lsdir = os.listdir(base)
+    if name:
+        return [i+'/' for i in lsdir if i.startswith(name)]
+    else:
+        return lsdir

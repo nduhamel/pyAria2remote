@@ -29,8 +29,7 @@ class Decrypter(MountPoint,Thread,object):
     
     Decrypter already implement:
     ========  ========================================================
-    jobQueue  
-    resultsQueue
+    jobQueue
     
     """
     __metaclass__ = ModuleMount
