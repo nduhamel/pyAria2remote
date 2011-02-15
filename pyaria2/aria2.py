@@ -15,33 +15,28 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 from mypyapp.console import ConsoleApp, command, option, make_option
 from mypyapp.completer import FilePathCompleter
+from mypyapp.plugins import Plugins, PluginsRegister
+from mypyapp.templates import render
 
-from aria2interface import Aria2Interface
-
+from .aria2interface import Aria2Interface
 from .utils import isUrl, tagetUrlIsText
-
-from .linkdecrypter import Decrypter
-from .module import ModuleLoader
-
-from .objects import AriaDownload
-from .formater import Formaters, ConsolFormater 
-
+from .model import AriaDownload
 
 
 class Aria2console(ConsoleApp):
     
     CONFIG = "Aria2console"   
     prompt = "Aria> "
-    
-    formaters = Formaters(ConsolFormater)
-    decrypters = ModuleLoader(Decrypter)   
-    
+        
+    PluginsRegister(__package__, "linkdecrypter")
     
     def load(self): 
         self.aria2interface = Aria2Interface(self._conf['server'], self._conf['port'])
         
     @command('add')
-    @option(make_option("-f", "--file", action="store", type="string", dest="filename", completer=FilePathCompleter))
+    @option([make_option("-f", "--file", action="store", type="string", dest="filename", completer=FilePathCompleter),
+            make_option("-d", action="store_true", dest="decrypt"),
+            ])
     def addurls(self, args, opts):
         """Download urls.  addurls url [ulr,]"""
         
@@ -62,9 +57,12 @@ class Aria2console(ConsoleApp):
             return False
         
         #Check content-type for require decrypter
+        #Need user intervention
         final_urls = []
+        
         for url in urls:
-            if tagetUrlIsText(url):
+            if tagetUrlIsText(url) and not opts.decrypt:
+                
                 question = "The url (%s) point to an HTML document\nIs it expected ?" % url
                 choice = self.select( ( ('c',"cancel"), ('dl',"download"), ('decrypt',"decrypt") ),prompt=question)
                 if choice == 'c' : continue
@@ -73,15 +71,19 @@ class Aria2console(ConsoleApp):
                     if rep: final_urls.append(rep)
                     else: self.pfeedback('%s can\'t be decrypt' % url)
                 if choice == 'dl' : final_urls.append(url)
+                
+            elif tagetUrlIsText(url) and opts.decrypt:
+                rep = self._decrypt(url)
+                if rep: final_urls.append(rep)
+                else: self.pfeedback('%s can\'t be decrypt' % url)
             else:
                 final_urls.append(url)
-
-        
+                
         options = {'max-connection-per-server':'2'}
-        started = [ self.aria2interface.request("aria2.addUri", [url], options) for url in final_urls]
+        started = [ self.aria2interface.adduri(url, options) for url in final_urls]
         for obj in started:
-            self.poutput( self.formaters.format(obj) )
-            
+            self.poutput(obj)
+        
         return False        
     
     
@@ -89,22 +91,38 @@ class Aria2console(ConsoleApp):
     def decrypt(self, arg):
         rep = self._decrypt(arg)
         if rep:
-            return self.do_addurls(rep)
+            return self.do_add(rep)
         else:
             self.poutput("Error")
             return True
     
     def _decrypt(self, url):
-        req =  self.decrypters.request(url)
+        req = Plugins("Decrypter").request(url)
         try:
             return req.get()
+            
         except:
             self.pfeedback( "No result")
 
     
     ####################################################################
     ## Final
+    @command()
+    def pauseall(self, args):
+        if self.aria2interface.pauseall():
+            self.poutput( 'All downloads paused' )
+        else:
+            self.poutput( 'Unknow error')
+        return False
     
+    @command()
+    def unpauseall(self, args):
+        if self.aria2interface.unpauseall():
+            self.poutput( 'All downloads unpaused' )
+        else:
+            self.poutput( 'Unknow error')
+        return False
+        
     @command('active')
     def tellactive(self, arg):
         """ Return list of active downloads """
@@ -115,8 +133,7 @@ class Aria2console(ConsoleApp):
             self.pfeedback( 'No active downloads' )
             return False
         
-        for obj in objs:
-            self.poutput( self.formaters.format(obj) )
+        self.poutput( render('/downloadList.tmplc', objs=objs) )
             
         return False
     
@@ -133,9 +150,8 @@ class Aria2console(ConsoleApp):
         if not objs: 
             self.pfeedback( 'No more stoped downloads' )
             return False
-        
-        for obj in objs:
-            self.poutput( self.formaters.format(obj) )
+            
+        self.poutput( render('/downloadList.tmplc', objs=objs) )
         
         if len(objs) < opts.num: return False 
         
@@ -155,11 +171,9 @@ class Aria2console(ConsoleApp):
             self.pfeedback( 'No more waiting downloads' )
             return False
 
-        for obj in objs:
-            self.poutput( self.formaters.format(obj) )
+        self.poutput( render('/downloadList.tmplc', objs=objs) )
         
         if len(objs) < opts.num: return False 
-
         self.handle_inifite_results(self.tellwaiting, '-s %s -n %s' %(opts.start+opts.num,opts.num ))
 
     @command()

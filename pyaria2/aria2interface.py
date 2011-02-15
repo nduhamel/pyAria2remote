@@ -15,7 +15,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 import xmlrpclib
 
-from .objects import AriaDownload
+from .model import AriaDownload
  
 class Aria2Interface(object):
     
@@ -47,3 +47,23 @@ class Aria2Interface(object):
     def tellwaiting(self, start, num):
         rep = self.request("aria2.tellWaiting", start, num)
         return map(AriaDownload, rep)
+
+    def adduri(self, urls, options=None):
+        if not isinstance(urls, list):
+            urls = [urls]
+        if options:
+            rep = self.request("aria2.addUri", urls, options)
+        else:
+            rep = self.request("aria2.addUri", urls)
+        
+        return rep
+    
+    def pauseall(self):
+        rep = self.request("aria2.pauseAll")
+        if rep == 'OK': return True
+        else: return False
+
+    def unpauseall(self):
+        rep = self.request("aria2.unpauseAll")
+        if rep == 'OK': return True
+        else: return False

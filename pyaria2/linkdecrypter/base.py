@@ -13,12 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-from ..module import ModuleMount, MountPoint
+from mypyapp.plugins import PluginMountPoint, PluginMount
 
 from threading import Thread
 from Queue import Queue
 
-class Decrypter(MountPoint,Thread,object):
+class Decrypter(PluginMountPoint,Thread,object):
     """
     Mount point for decrypter plugins
 
@@ -32,7 +32,7 @@ class Decrypter(MountPoint,Thread,object):
     jobQueue
     
     """
-    __metaclass__ = ModuleMount
+    __metaclass__ = PluginMount
     
     daemon = True
     

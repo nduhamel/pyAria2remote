@@ -16,12 +16,14 @@
 # Taken from Python 2.7 with permission from/by the original author.
 import pkgutil
 import inspect
+
+from mypyapp.config import getConfig
+
 from base import *
 
 """
 Import all installed in conf plugins
 """
-from ..config import getConfig
 
 conf =  getConfig("Aria2console")
 
