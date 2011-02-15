@@ -1,0 +1,6 @@
+% for download in objs:
+id: ${download['id']}       ${download["filename"]}
+${download['downloadSpeed']}/s  ${download['complete_percent']}   \
+${download['completedLength']}/${download['totalLength']} \
+avec ${download['connections']} connexions dans: ${download['eta']}
+% endfor
