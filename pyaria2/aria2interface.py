@@ -67,3 +67,7 @@ class Aria2Interface(object):
         rep = self.request("aria2.unpauseAll")
         if rep == 'OK': return True
         else: return False
+    
+    def getglobaloption(self):
+        rep = self.request("aria2.getGlobalOption")
+        return rep

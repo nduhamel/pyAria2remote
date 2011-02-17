@@ -1,0 +1,4 @@
+<%namespace name="term" file="term.def"/>\
+% for option, value in objs.items():
+<%term:green>${option}</%term:green>  :  ${value}
+% endfor

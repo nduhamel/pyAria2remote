@@ -180,5 +180,12 @@ class Aria2console(ConsoleApp):
             self.poutput( 'Unknow error')
         return False
     
+    @command()
+    def option(self, arg):
+        rep = self.aria2interface.getglobaloption()
+        #~ self.poutput(str(rep))
+        self.poutput( render('/options.tmplc', objs=rep) )
+        return False
+    
     @command('q', 'quit', 'bye')
     def quit(self, *ignored): return True
