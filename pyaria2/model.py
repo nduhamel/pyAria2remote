@@ -19,7 +19,7 @@ from mypyapp.utils import time_string
 
 class AriaDownload(Model):
     
-    id             = IntegerProperty()
+    id              = IntegerProperty()
     filename        = StringProperty()
     totalLength     = StorageSizesProperty()
     completedLength = StorageSizesProperty()

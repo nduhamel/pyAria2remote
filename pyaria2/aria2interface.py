@@ -27,7 +27,8 @@ class Aria2Interface(object):
     def request(self, cmd, *args):
         server = self.connection
         fn = getattr(server, cmd)
-        return fn(*args)
+        rep = fn(*args)
+        return rep
     
     def purge(self):
         """ purges completed/error/removed downloads to free memory """
@@ -67,6 +68,15 @@ class Aria2Interface(object):
         rep = self.request("aria2.unpauseAll")
         if rep == 'OK': return True
         else: return False
+        
+    def pause(self, gid):
+        try:
+            gid = self.request("aria2.pause", gid)
+            return gid
+        except xmlrpclib.Fault, err:
+            if "cannot be paused now" in err.faultString:
+                return "Download can't be paused"
+        
     
     def getglobaloption(self):
         rep = self.request("aria2.getGlobalOption")

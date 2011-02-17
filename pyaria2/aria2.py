@@ -42,7 +42,8 @@ class Aria2console(ConsoleApp):
         
         if opts.filename:
             with open(opts.filename, 'r') as f:
-                args.extend( f.readlines() )
+                #Filter empty line
+                args.extend([line.strip('\n') for line in f.readlines() if line.strip('\n ')])
         
         error_msg = "/!\ -->  '{0}' is not a valid url "
         do = lambda i: isUrl(i) or self.pfeedback(error_msg.format(i))
@@ -88,7 +89,7 @@ class Aria2console(ConsoleApp):
         if rep:
             return self.do_add(rep)
         else:
-            self.poutput("Error")
+            self.poutput("Unknow error")
             return True
     
     def _decrypt(self, url):
@@ -102,6 +103,16 @@ class Aria2console(ConsoleApp):
     
     ####################################################################
     ## Final
+    @command()
+    @option([make_option("-i", "--id", action="store", type="string", dest="gid"),
+            ])
+    def pause(self, args, opts):
+        if opts.gid:
+            rep = self.aria2interface.pause(opts.gid)
+            self.poutput(str(rep))
+        else:
+            self.poutput( 'You must specify a download id with option -i' )
+    
     @command()
     def pauseall(self, args):
         if self.aria2interface.pauseall():
@@ -183,7 +194,6 @@ class Aria2console(ConsoleApp):
     @command()
     def option(self, arg):
         rep = self.aria2interface.getglobaloption()
-        #~ self.poutput(str(rep))
         self.poutput( render('/options.tmplc', objs=rep) )
         return False
     
