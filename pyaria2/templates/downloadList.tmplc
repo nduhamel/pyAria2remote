@@ -1,6 +1,10 @@
-% for download in objs:
-id: ${download['id']}       ${download["filename"]}
-${download['downloadSpeed']}/s  ${download['complete_percent']}   \
-${download['completedLength']}/${download['totalLength']} \
-avec ${download['connections']} connexions dans: ${download['eta']}
+<%namespace name="term" file="term.def"/>\
+% for dl in objs:
+*----------------------------------------------------------------------*
+| id: ${dl['id']}       <%term:bold>${dl["filename"]}</%term:bold>
+|
+| <%term:red>${dl['downloadSpeed']}/s</%term:red>  <%term:blue>${dl['complete_percent']}</%term:blue>  \
+<%term:green>${dl['completedLength']}/${dl['totalLength']}</%term:green> \
+avec ${dl['connections']} connexions dans: ${dl['eta']}
 % endfor
+*----------------------------------------------------------------------* \

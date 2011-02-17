@@ -26,7 +26,7 @@ from .model import AriaDownload
 class Aria2console(ConsoleApp):
     
     CONFIG = "Aria2console"   
-    prompt = "Aria> "
+    prompt = "\x1b[1m\x1b[35mAria>\x1b[0m "
         
     PluginsRegister(__package__, "linkdecrypter")
     
@@ -40,24 +40,19 @@ class Aria2console(ConsoleApp):
     def addurls(self, args, opts):
         """Download urls.  addurls url [ulr,]"""
         
-        #Import url from file 
         if opts.filename:
             with open(opts.filename, 'r') as f:
                 args.extend( f.readlines() )
         
-        
-        #Validate url
         error_msg = "/!\ -->  '{0}' is not a valid url "
         do = lambda i: isUrl(i) or self.pfeedback(error_msg.format(i))
         urls = [i for i in args if do(i) ]
         
-        #if no valid urls quit
         if not urls:
             self.pfeedback("No url provided")
             return False
         
-        #Check content-type for require decrypter
-        #Need user intervention
+
         final_urls = []
         
         for url in urls:

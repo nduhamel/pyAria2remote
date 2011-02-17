@@ -14,13 +14,19 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 import mypyapp.config
-
+import logging
 
 class ControlerType(type):
     def __init__(cls, name, bases, attrs):
-        
-        if cls.__module__ != __name__:
+
+        if cls.__module__.split('.')[0] != 'mypyapp':
             mypyapp.config.INSTALLED_APP.append( cls.__module__ )
+            
+            log_file = '/tmp/' + cls.__module__.split('.')[0] + '.log'
+            logging.basicConfig(filename=log_file,level=logging.DEBUG)
+            
+            logger = logging.getLogger(name)
+            setattr(cls, 'logger', logger)
         
         for key, val in attrs.iteritems():
             commands = getattr(val, 'command', None)

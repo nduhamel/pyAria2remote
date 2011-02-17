@@ -36,7 +36,7 @@ class AriaDownload(Model):
     @ComputedProperty
     def eta(self):
         if self.downloadSpeed == 0:
-            return -1
+            return 'None'
         return time_string((self.totalLength-self.completedLength)/self.downloadSpeed)
     
     def __init__(self, data):
@@ -46,7 +46,7 @@ class AriaDownload(Model):
     def populate_from_aria(self, response):
         self.id              = int(response['gid'])
         self.filename        = response['files'][0]['path']
-        self.totalLength     = int(response['totalLength'])
-        self.completedLength = int(response['completedLength'])
+        self.totalLength     = float(response['totalLength'])
+        self.completedLength = float(response['completedLength'])
         self.downloadSpeed   = int(response['downloadSpeed'])
         self.connections     = int(response['connections'])

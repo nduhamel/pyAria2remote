@@ -1,0 +1,12 @@
+<%def name="bold()">\
+${ '\x1b[1m' |n}${caller.body()}${ '\x1b[0m' |n}\
+</%def>\
+<%def name="blue()">\
+${ '\x1b[34m' |n}${caller.body()}${ '\x1b[0m' |n}\
+</%def>\
+<%def name="red()">\
+${ '\x1b[31m' |n}${caller.body()}${ '\x1b[0m' |n}\
+</%def>\
+<%def name="green()">\
+${ '\x1b[32m' |n}${caller.body()}${ '\x1b[0m' |n}\
+</%def>\

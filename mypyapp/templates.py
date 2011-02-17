@@ -64,7 +64,7 @@ class TemplateDoesNotExist(Exception):
 
 
 
-
+from mako.template import Template
 from mako.lookup import TemplateLookup
 
 TEMPLATE_LOOKUP = None
@@ -80,7 +80,8 @@ def load_template_dir():
         if os.path.isdir(template_dir):
             app_template_dirs.append(template_dir)
     if app_template_dirs:
-        TEMPLATE_LOOKUP = TemplateLookup(directories=app_template_dirs, output_encoding='utf-8', encoding_errors='replace')
+        app_template_dirs.append( os.path.join(os.path.dirname(__file__), 'default_templates') )
+        TEMPLATE_LOOKUP = TemplateLookup(directories=app_template_dirs, module_directory='/tmp/mypyapp_mako_modules', output_encoding='utf-8', encoding_errors='replace')
     
 def render(template_name, **data):
     mytemplate = TEMPLATE_LOOKUP.get_template(template_name)
