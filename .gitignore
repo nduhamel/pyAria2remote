@@ -1,5 +1,3 @@
 *.pyc
-aria2remote.conf
-pyAria2remote.history
 pyariaremote.egg-info/
-files
+aria2remote.history
