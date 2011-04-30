@@ -16,7 +16,7 @@
 import xmlrpclib
 
 from .model import AriaDownload
- 
+
 class Aria2Interface(object):
     
     def __init__(self, server, port):
@@ -68,6 +68,14 @@ class Aria2Interface(object):
         rep = self.request("aria2.unpauseAll")
         if rep == 'OK': return True
         else: return False
+    
+    def unpause(self, gid):
+        try:
+            gid = self.request("aria2.unpause", gid)
+            return gid
+        except xmlrpclib.Fault, err:
+            if "cannot be paused now" in err.faultString:
+                return "Download can't be unpaused"
         
     def pause(self, gid):
         try:
@@ -76,7 +84,10 @@ class Aria2Interface(object):
         except xmlrpclib.Fault, err:
             if "cannot be paused now" in err.faultString:
                 return "Download can't be paused"
-        
+    
+    def remove(self, gid):
+        gid = self.request("aria2.remove", gid)
+        return gid
     
     def getglobaloption(self):
         rep = self.request("aria2.getGlobalOption")

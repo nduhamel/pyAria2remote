@@ -30,3 +30,11 @@ def tagetUrlIsText(url):
     content_type = u.info().getheader("Content-Type")
     if "text" in content_type: return True
     return False
+
+def sort(condition, iterable):
+    valid   = []
+    invalid = []
+    for item in iterable:
+        if  condition(item): valid.append(item)
+        else: invalid.append(item)
+    return (valid, invalid)

@@ -13,94 +13,122 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+from blinker import signal
+
+import configobj
+import os
+
 from mypyapp.console import ConsoleApp, command, option, make_option
 from mypyapp.completer import FilePathCompleter
-from mypyapp.plugins import Plugins, PluginsRegister
 from mypyapp.templates import render
+from mypyapp.config import UserConfig
+import mypyapp.log
 
 from .aria2interface import Aria2Interface
-from .utils import isUrl, tagetUrlIsText
+from .decrypter import Decrypter
+from .utils import isUrl, tagetUrlIsText, sort
 from .model import AriaDownload
+
+mypyapp.log.init(mypyapp.log.DEBUG)
+
+CONF = {'aria2remote':{
+                            'server': '127.0.0.1',
+                            'port'  : '6800',
+                        }
+}
 
 
 class Aria2console(ConsoleApp):
     
     CONFIG = "Aria2console"   
     prompt = "\x1b[1m\x1b[35mAria>\x1b[0m "
+
+    def load(self):
+        self.config = UserConfig("aria2remote", default=CONF)
         
-    PluginsRegister(__package__, "linkdecrypter")
-    
-    def load(self): 
-        self.aria2interface = Aria2Interface(self._conf['server'], self._conf['port'])
+        self.aria2interface = \
+             Aria2Interface(self.config['aria2remote']['server'], \
+                            self.config['aria2remote']['port'])
+                            
+        self.decrypter = Decrypter()
+
+        
+        #Load plugin:
+        if "plugins" in self.config['aria2remote'].keys():
+            loaded = []
+            for plugin in self.config['aria2remote']['plugins']:
+                package_name = 'pyaria2.plugins.%s' % plugin
+                loaded.append( __import__(package_name, fromlist=[plugin,]) )
+            
+            plugins = []
+            for plugin in loaded:
+                cls = getattr(plugin, plugin.__PLUGIN__)
+                obj = cls(self.config)
+                plugins.append(obj)
+            self.plugins = plugins
+        else:
+            self.plugins = []
         
     @command('add')
     @option([make_option("-f", "--file", action="store", type="string", dest="filename", completer=FilePathCompleter),
-            make_option("-d", action="store_true", dest="decrypt"),
-            ])
+             make_option("-d", action="store_true", dest="decrypt"),])
     def addurls(self, args, opts):
-        """Download urls.  addurls url [ulr,]"""
+        """Download urls.  
+        add url [ulr,]
+        add -f linksfile"""
         
-        if opts.filename:
+        links = args
+        
+        # Extend links with links from file
+        if opts.filename: 
             with open(opts.filename, 'r') as f:
-                #Filter empty line
-                args.extend([line.strip('\n') for line in f.readlines() if line.strip('\n ')])
+                #One link per line and filter empty line
+                l = [line.strip('\n') for line in f.readlines() if line.strip('\n ')]
+                links.extend(l)
         
-        error_msg = "/!\ -->  '{0}' is not a valid url "
-        do = lambda i: isUrl(i) or self.pfeedback(error_msg.format(i))
-        urls = [i for i in args if do(i) ]
+        #Check links        
+        links , badlinks = sort(isUrl,links)
         
-        if not urls:
-            self.pfeedback("No url provided")
+        for link in badlinks:
+            self.pfeedback( "Error '%s' is not a valid url " % link)
+        
+        #Case where there is no (valid) link
+        if not links:
+            self.pfeedback("No valid url provided. Abord.")
             return False
         
-
-        final_urls = []
+        #Check if url don't point to a text/html file
+        need_decrypt , links = sort(tagetUrlIsText, links)
         
-        for url in urls:
-            if tagetUrlIsText(url) and not opts.decrypt:
-                
-                question = "The url (%s) point to an HTML document\nIs it expected ?" % url
-                choice = self.select( ( ('c',"cancel"), ('dl',"download"), ('decrypt',"decrypt") ),prompt=question)
-                if choice == 'c' : continue
-                if choice == 'decrypt': 
-                    rep = self._decrypt(url)
-                    if rep: final_urls.append(rep)
-                    else: self.pfeedback('%s can\'t be decrypt' % url)
-                if choice == 'dl' : final_urls.append(url)
-                
-            elif tagetUrlIsText(url) and opts.decrypt:
-                rep = self._decrypt(url)
-                if rep: final_urls.append(rep)
-                else: self.pfeedback('%s can\'t be decrypt' % url)
-            else:
-                final_urls.append(url)
-                
+        #Ask for decrypt link
+        to_decrypt = []
+        for link in need_decrypt:
+            if not opts.decrypt:
+                question = "The url (%s) point to an HTML document\nIs it expected ?" % link
+                choice = self.select( ( (1,"cancel"), (2,"download"), (3,"decrypt") ),prompt=question)
+                if choice == 1 : continue
+                if choice == 2 : links.append(link)
+                if choice == 3 : to_decrypt.append(link)
+            else: 
+                to_decrypt.append(link)
+        
         options = {'max-connection-per-server':'2'}
-        started = [ self.aria2interface.adduri(url, options) for url in final_urls]
-        for obj in started:
-            self.poutput(obj)
-        
-        return False        
-    
-    
-    @command()
-    def decrypt(self, arg):
-        rep = self._decrypt(arg)
-        if rep:
-            return self.do_add(rep)
-        else:
-            self.poutput("Unknow error")
-            return True
-    
-    def _decrypt(self, url):
-        req = Plugins("Decrypter").request(url)
-        try:
-            return req.get()
-            
-        except:
-            self.pfeedback( "No result")
+        started = [ self.aria2interface.adduri([link], options) for link in links]
 
-    
+        for i in need_decrypt:
+            self.decrypter.add(i)
+        
+        
+        for request in self.decrypter.join():
+            for target in request.targets:
+                if target.sources:
+                    mypyapp.log.debug( "%s : decrypted" % target.link )
+                    self.aria2interface.adduri( target.sources , options)
+                else:
+                    mypyapp.log.error( "%s : can't be decrypted" % target.link )
+        
+        return False
+
     ####################################################################
     ## Final
     @command()
@@ -122,12 +150,33 @@ class Aria2console(ConsoleApp):
         return False
     
     @command()
+    @option([make_option("-i", "--id", action="store", type="string", dest="gid"),
+            ])
+    def unpause(self, args, opts):
+        if opts.gid:
+            rep = self.aria2interface.unpause(opts.gid)
+            self.poutput(str(rep))
+        else:
+            self.poutput( 'You must specify a download id with option -i' )
+    
+    @command()
     def unpauseall(self, args):
         if self.aria2interface.unpauseall():
             self.poutput( 'All downloads unpaused' )
         else:
             self.poutput( 'Unknow error')
         return False
+    
+    @command()
+    @option([make_option("-i", "--id", action="store", type="string", dest="gid"),
+            ])
+    def remove(self, args, opts):
+        if opts.gid:
+            rep = self.aria2interface.remove(opts.gid)
+            self.poutput(str(rep))
+        else:
+            self.poutput( 'You must specify a download id with option -i' )
+    
         
     @command('active')
     def tellactive(self, arg):

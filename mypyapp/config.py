@@ -16,38 +16,31 @@
 import sys
 import os
 
-from lib.configobj import ConfigObj
+from configobj import ConfigObj
+
+from utils import get_home_dir
+
+
+def get_config_dir():
+    if not os.path.exists('%s/.config/' % get_home_dir() ):
+        os.makedirs( '%s/.config/' % get_home_dir() )
+    if not os.path.exists('%s/.config/mypyapp' % get_home_dir() ):
+        os.makedirs( '%s/.config/mypyapp' % get_home_dir() )
+    return '%s/.config/mypyapp' % get_home_dir()
+    
+
+class UserConfig(ConfigObj, object):
+    
+    def __init__(self, name, default=None, **kwargs):
+        self.name = name
+        
+        filename = '%s/%s.ini' % ( get_config_dir() , self.name)
+        
+        if not os.path.exists(filename) and default is not None:
+            config = default
+            super(UserConfig, self).__init__(config, **kwargs)
+            self.write(open(filename, 'w'))
+        else:
+            super(UserConfig, self).__init__(filename, **kwargs)
 
 INSTALLED_APP = []
-
-def _getConfObj():
-    return ConfigObj("".join((os.path.basename(sys.argv[0]).split('.')[0],'.conf')))
-
-class ConfWrapper(object):
-    
-    def __init__(self, confobj):
-        self.confobj = confobj
-        
-    def __getitem__(self, key):
-        try:
-            return self.confobj.__getitem__(key)
-        except KeyError:
-            return None
-            
-    def debug(self):
-        print self.confobj
-        
-
-
-def getConfig(name):
-    config = _getConfObj()
-    section = config[name]
-    return ConfWrapper(section)
-
-
-class LoadConfig(object):
-    """ Add a _conf attr with the conf object """
-    
-    def __init__(self):
-        if hasattr(self, 'CONFIG'):
-            self._conf = getConfig(self.CONFIG)            

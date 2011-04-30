@@ -22,7 +22,6 @@ import atexit
 import readline
 import sys
 
-from .config import LoadConfig
 from .bootstrap import ControlerType
 from mypyapp.templates import load_template_dir
 
@@ -89,7 +88,7 @@ def option(option_list, arg_desc="arg"):
     return option_setup
 
 
-class ConsoleApp(cmd.Cmd, LoadConfig, object):
+class ConsoleApp(cmd.Cmd, object):
     """ 
     Define:
         select(options, prompt='Your choice? ')
@@ -106,7 +105,6 @@ class ConsoleApp(cmd.Cmd, LoadConfig, object):
     verbose = True
     
     def __init__(self):
-        LoadConfig.__init__(self)
         cmd.Cmd.__init__(self)
         load_template_dir()
         

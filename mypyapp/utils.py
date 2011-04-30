@@ -13,6 +13,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+import os
+
+def get_home_dir():
+    """
+    Return user home directory
+    """
+    try:
+        path = os.path.expanduser('~')
+    except:
+        path = ''
+    for env_var in ('HOME', 'USERPROFILE', 'TMP'):
+        if os.path.isdir(path):
+            break
+        path = os.environ.get(env_var, '')
+    if path:
+        return path
+    else:
+        raise RuntimeError('Please define environment variable $HOME')
+
 
 
 def sizeof_humanreadable(num):

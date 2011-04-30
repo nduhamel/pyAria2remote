@@ -1,3 +1,5 @@
 *.pyc
-pyAria2remote.conf
+aria2remote.conf
 pyAria2remote.history
+pyariaremote.egg-info/
+files
