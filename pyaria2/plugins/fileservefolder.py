@@ -24,7 +24,7 @@ from mypyapp.htmlparser import get_parser
 
 __PLUGIN__ = 'Fileservefolder'
 
-URL_SCHEME = "http://www\.fileserve\.com/list/*"
+URL_SCHEME = "http://(www\.)?fileserve\.com/list/*"
 
 class Fileservefolder(object):
     def __init__(self, conf):
