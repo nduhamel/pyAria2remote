@@ -88,4 +88,5 @@ class Decrypter(object):
                 responses = self._decrypt_signal.send(req)
                 have_results = [ rep for rep in responses if rep[1]]
                 debug("Decrypter request: %s result %s" % (req.source,bool(have_results)) )
-        return self._requests
+            self._requests.remove(req)
+            yield req

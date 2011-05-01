@@ -90,10 +90,12 @@ class Aria2console(ConsoleApp):
         links , badlinks = sort(isUrl,links)
         
         for link in badlinks:
+            mypyapp.log.error("Error '%s' is not a valid url " % link)
             self.pfeedback( "Error '%s' is not a valid url " % link)
         
         #Case where there is no (valid) link
         if not links:
+            mypyapp.log.error("No valid url provided. Abord.")
             self.pfeedback("No valid url provided. Abord.")
             return False
         
@@ -115,7 +117,7 @@ class Aria2console(ConsoleApp):
         options = {'max-connection-per-server':'2'}
         started = [ self.aria2interface.adduri([link], options) for link in links]
 
-        for i in need_decrypt:
+        for i in to_decrypt:
             self.decrypter.add(i)
         
         
