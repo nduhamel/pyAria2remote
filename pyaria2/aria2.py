@@ -16,7 +16,6 @@
 from blinker import signal
 
 import configobj
-import os
 
 from mypyapp.console import ConsoleApp, command, option, make_option
 from mypyapp.completer import FilePathCompleter
@@ -34,6 +33,7 @@ mypyapp.log.init(mypyapp.log.DEBUG)
 CONF = {'aria2remote':{
                             'server': '127.0.0.1',
                             'port'  : '6800',
+                            'plugins' : ['fileservefolder','filesonicfolder'],
                         }
 }
 
