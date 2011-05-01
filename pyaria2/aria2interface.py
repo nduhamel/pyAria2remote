@@ -89,6 +89,10 @@ class Aria2Interface(object):
         gid = self.request("aria2.remove", gid)
         return gid
     
+    def tellstatus(self, gid):
+        response = self.request("aria2.tellStatus", gid)
+        return AriaDownload(response)
+    
     def getglobaloption(self):
         rep = self.request("aria2.getGlobalOption")
         return rep

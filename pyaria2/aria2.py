@@ -130,7 +130,26 @@ class Aria2console(ConsoleApp):
                     mypyapp.log.error( "%s : can't be decrypted" % target.link )
         
         return False
-
+    
+    @command()
+    def status(self, args):
+        args = args.split()
+        if not args:
+            mypyapp.log.error( "You must specify a download id" )
+            self.pfeedback( "You must specify a download id" )
+            return False
+        
+        if len(args) > 1:
+            mypyapp.log.error( "You must specify only one download id" )
+            self.pfeedback( "You must specify only one download id" )
+            return False
+            
+        objs = self.aria2interface.tellstatus(args[0])
+        self.poutput( render('/downloadList.tmplc', objs=[objs]) )
+        
+        return False
+        
+    
     ####################################################################
     ## Final
     @command()
