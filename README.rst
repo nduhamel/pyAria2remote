@@ -18,6 +18,7 @@ Installation
 Use virtualenvwrapper.
 
     $ mkvirtualenv aria2remote
+
     $ python setup.py develop
 
 Launch with: **aria2remote**
