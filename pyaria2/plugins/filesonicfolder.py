@@ -24,7 +24,7 @@ from mypyapp.htmlparser import get_parser
 
 __PLUGIN__ = 'Filesonicfolder'
 
-URL_SCHEME = "http://www\.filesonic\.pl/folder/*"
+URL_SCHEME = "http://www\.filesonic\.(pl|com)/folder/*"
 
 class Filesonicfolder(object):
     def __init__(self, conf):
