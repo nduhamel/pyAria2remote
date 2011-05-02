@@ -82,7 +82,7 @@ class Decrypter(object):
         debug("Decrypter: add link: %s" % link)
     
     def join(self):
-        for req in self._requests:
+        for req in self._requests[:]:
             have_results = True
             while have_results:
                 responses = self._decrypt_signal.send(req)
